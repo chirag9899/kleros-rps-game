@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { ConnectButton, useActiveAccount } from 'thirdweb/react';
-import { client } from '@/lib/thirdweb';
+import { client, chain } from '@/lib/thirdweb';
 import GameContainer from '@/components/GameContainer';
 import GameHistory from '@/components/GameHistory';
 import NetworkCheck from '@/components/NetworkCheck';
+import { useForceChain } from '@/hooks/useForceChain';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,6 +15,7 @@ export default function Home() {
   const [contractAddress, setContractAddress] = useState('');
   const [refreshKey, setRefreshKey] = useState(0);
   const account = useActiveAccount();
+  const { isCorrectChain } = useForceChain();
 
   useEffect(() => {
     setMounted(true);
@@ -59,6 +61,7 @@ export default function Home() {
             <div className="flex justify-center mb-6">
               <ConnectButton 
                 client={client}
+                chain={chain}
                 connectButton={{
                   label: "Connect Wallet",
                 }}
@@ -67,6 +70,14 @@ export default function Home() {
           </div>
 
           <NetworkCheck />
+          
+          {account && !isCorrectChain && (
+            <div className="bg-red-50 border border-red-200 p-4 rounded-lg mb-6">
+              <p className="text-red-800 text-center">
+                Please switch to Polygon Amoy testnet to continue
+              </p>
+            </div>
+          )}
           
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
             <div className="lg:col-span-3">

@@ -5,6 +5,7 @@ import { ConnectButton, useActiveAccount } from 'thirdweb/react';
 import { client } from '@/lib/thirdweb';
 import GameContainer from '@/components/GameContainer';
 import GameHistory from '@/components/GameHistory';
+import NetworkCheck from '@/components/NetworkCheck';
 
 export const dynamic = 'force-dynamic';
 
@@ -56,10 +57,17 @@ export default function Home() {
               Play the ultimate version of Rock Paper Scissors on Polygon Amoy testnet
             </p>
             <div className="flex justify-center mb-6">
-              <ConnectButton client={client} />
+              <ConnectButton 
+                client={client}
+                connectButton={{
+                  label: "Connect Wallet",
+                }}
+              />
             </div>
           </div>
 
+          <NetworkCheck />
+          
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
             <div className="lg:col-span-3">
               <div className="bg-white rounded-lg shadow-lg p-6">

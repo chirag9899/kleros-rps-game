@@ -64,7 +64,7 @@ export default function CreateGame({ onGameCreated }: CreateGameProps) {
     setIsCreating(true);
 
     try {
-      // generate salt and compute hash
+      //generate salt and compute hash
       const salt = generateSalt();
       const hash = computeHash(selectedMove, salt);
       

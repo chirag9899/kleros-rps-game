@@ -71,7 +71,9 @@ export default function JoinGame({ contractAddress, onGameJoined }: JoinGameProp
     try {
 
       const provider = new ethers.providers.JsonRpcProvider(
-        'https://rpc-amoy.polygon.technology/'
+        activeChain?.id === 11155111 
+          ? 'https://ethereum-sepolia-rpc.publicnode.com' 
+          : 'https://rpc-amoy.polygon.technology/'
       );
       const gasPrice = await provider.getGasPrice();
       const increasedGasPrice = gasPrice.mul(150).div(100);

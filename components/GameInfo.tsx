@@ -214,7 +214,7 @@ export default function GameInfo({ contractAddress, onRefresh }: GameInfoProps) 
         {timeoutCountdown && timeoutCountdown > 0 && state.phase !== 'completed' && (
           <div className="bg-orange-100 border border-orange-400 p-3 rounded text-black">
             <p className="text-sm font-medium mb-2">
-              ⏰ Timeout in: {Math.floor(timeoutCountdown / 60)}:{(timeoutCountdown % 60).toString().padStart(2, '0')}
+              Timeout in: {Math.floor(timeoutCountdown / 60)}:{(timeoutCountdown % 60).toString().padStart(2, '0')}
             </p>
             <p className="text-xs text-orange-700">
               If the other player doesn't respond, you can claim timeout

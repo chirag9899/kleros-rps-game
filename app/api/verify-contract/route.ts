@@ -87,7 +87,6 @@ export async function POST(request: NextRequest) {
       });
     }
   } catch (error: any) {
-    console.error('❌ Verification error:', error);
     return NextResponse.json(
       { 
         guid: null, 

@@ -1,36 +1,39 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# RPS Lizard Spock on Polygon
 
-## Getting Started
+Simple web3 version of Rock Paper Scissors Lizard Spock. Two players stake ETH and the winner takes all.
 
-First, run the development server:
+## Getting started
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+You'll need:
+- MetaMask wallet
+- Some testnet MATIC (get from [faucet](https://faucet.polygon.technology/))
+- Add Polygon Amoy network to MetaMask (chain ID: 80002)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Create `.env.local` with your thirdweb client ID.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## How to play
 
-## Learn More
+1. Player 1 creates game, picks move, stakes ETH
+2. Player 2 joins with same stake amount
+3. Player 1 reveals move
+4. Winner gets both stakes
 
-To learn more about Next.js, take a look at the following resources:
+## Game rules
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Rock > Scissors, Lizard  
+Paper > Rock, Spock  
+Scissors > Paper, Lizard  
+Spock > Scissors, Rock  
+Lizard > Spock, Paper
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Notes
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Each game deploys a new contract automatically
+- Timeouts prevent funds from getting stuck
+- Moves are hidden until reveal (commitment scheme)
+- Built for Kleros interview

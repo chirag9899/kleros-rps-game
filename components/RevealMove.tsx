@@ -5,7 +5,6 @@ import { useActiveAccount } from 'thirdweb/react';
 import { prepareContractCall, sendTransaction } from 'thirdweb';
 import { getRPSContract } from '@/lib/thirdweb';
 import { updateGameStatus } from '@/lib/game-history';
-import { storeGameResult } from '@/lib/game-result';
 import { getSalt, clearSalt, MOVE_NAMES } from '@/lib/contract';
 import { Icon } from '@/components/ui/icons';
 
@@ -178,7 +177,6 @@ export default function RevealMove({ contractAddress, onRevealed }: RevealMovePr
       }
       
       if (player2Move !== null) {
-        storeGameResult(contractAddress, move, player2Move);
       }
       
       clearSalt(contractAddress, account.address);

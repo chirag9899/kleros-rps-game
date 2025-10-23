@@ -19,40 +19,14 @@ interface GameHistoryProps {
 export default function GameHistory({ onLoadGame, currentAddress }: GameHistoryProps) {
   const [history, setHistory] = useState<GameHistoryType[]>([]);
   const [isExpanded, setIsExpanded] = useState(false);
-  const [enrichedStakes, setEnrichedStakes] = useState<Record<string, string>>({});
 
   useEffect(() => {
     loadHistory();
   }, []);
 
-  const loadHistory = async () => {
+  const loadHistory = () => {
     const games = getGameHistory();
     setHistory(games);
-    
-    const stakesToFetch = games
-      .filter(g => !g.stake || g.stake === '0' || g.stake === '0.0')
-      .map(g => g.contractAddress);
-    
-    if (stakesToFetch.length > 0) {
-      const stakes: Record<string, string> = {};
-      
-      await Promise.all(
-        stakesToFetch.map(async (contractAddress) => {
-          try {
-            const response = await fetch(`/api/game-result?contractAddress=${contractAddress}`);
-            if (response.ok) {
-              const data = await response.json();
-              if (data.result?.stake) {
-                stakes[contractAddress.toLowerCase()] = data.result.stake;
-              }
-            }
-          } catch (err) {
-          }
-        })
-      );
-      
-      setEnrichedStakes(stakes);
-    }
   };
 
   const handleClear = () => {
@@ -187,7 +161,7 @@ export default function GameHistory({ onLoadGame, currentAddress }: GameHistoryP
                           <div className="flex items-center gap-2">
                             <span className="text-gray-500">Stake:</span>
                             <span className="text-green-400 font-semibold">
-                              {enrichedStakes[game.contractAddress.toLowerCase()] || formatEth(game.stake)} MATIC
+                              {formatEth(game.stake)} MATIC
                             </span>
                           </div>
                           <span className="text-gray-600">•</span>

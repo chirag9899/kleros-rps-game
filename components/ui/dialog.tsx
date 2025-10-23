@@ -45,9 +45,9 @@ const DialogTrigger = React.forwardRef<
   
   if (asChild && React.isValidElement(children)) {
     return React.cloneElement(children, {
-      ...children.props,
+      ...(children as React.ReactElement<any>).props,
       onClick: (e: React.MouseEvent) => {
-        children.props.onClick?.(e)
+        (children as React.ReactElement<any>).props.onClick?.(e)
         setOpen(true)
       },
     })

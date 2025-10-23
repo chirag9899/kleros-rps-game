@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useActiveAccount } from 'thirdweb/react';
+import { useActiveAccount, useActiveWalletChain } from 'thirdweb/react';
 import { prepareContractCall, sendTransaction } from 'thirdweb';
 import { getRPSContract } from '@/lib/thirdweb';
 import { Icon } from '@/components/ui/icons';
@@ -13,6 +13,7 @@ interface TimeoutButtonsProps {
 
 export default function TimeoutButtons({ contractAddress, onSuccess }: TimeoutButtonsProps) {
   const account = useActiveAccount();
+  const activeChain = useActiveWalletChain();
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState('');
 
@@ -26,7 +27,7 @@ export default function TimeoutButtons({ contractAddress, onSuccess }: TimeoutBu
     setIsProcessing(true);
 
     try {
-      const contract = getRPSContract(contractAddress);
+      const contract = getRPSContract(contractAddress, activeChain?.id);
       
       const transaction = prepareContractCall({
         contract,
@@ -63,7 +64,7 @@ export default function TimeoutButtons({ contractAddress, onSuccess }: TimeoutBu
     setIsProcessing(true);
 
     try {
-      const contract = getRPSContract(contractAddress);
+      const contract = getRPSContract(contractAddress, activeChain?.id);
       
       const transaction = prepareContractCall({
         contract,

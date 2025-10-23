@@ -5,7 +5,7 @@ import { join } from 'path';
 
 export async function POST(request: NextRequest) {
   try {
-    const { contractAddress, constructorArgs } = await request.json();
+    const { contractAddress, constructorArgs, chainId } = await request.json();
 
     if (!contractAddress || !constructorArgs) {
       return NextResponse.json(
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
     });
 
     const response = await fetch(
-      'https://api.etherscan.io/v2/api?chainid=80002',
+      `https://api.etherscan.io/v2/api?chainid=${chainId}`,
       {
         method: 'POST',
         headers: {
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
     if (data.status === '1') {
       await new Promise(resolve => setTimeout(resolve, 3000));
       
-      const status = await checkVerificationStatus(data.result, apiKey);
+      const status = await checkVerificationStatus(data.result, apiKey, chainId);
       
       return NextResponse.json({
         guid: data.result,
@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function checkVerificationStatus(guid: string, apiKey: string): Promise<string> {
+async function checkVerificationStatus(guid: string, apiKey: string, chainId?: number): Promise<string> {
   try {
     const params = new URLSearchParams({
       module: 'contract',
@@ -109,7 +109,7 @@ async function checkVerificationStatus(guid: string, apiKey: string): Promise<st
     });
 
     const response = await fetch(
-      `https://api.etherscan.io/v2/api?chainid=80002&${params.toString()}`
+      `https://api.etherscan.io/v2/api?chainid=${chainId}&${params.toString()}`
     );
 
     const data = await response.json();

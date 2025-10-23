@@ -1,12 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ConnectButton, useActiveAccount } from 'thirdweb/react';
+import { ConnectButton, useActiveAccount, useActiveWalletChain } from 'thirdweb/react';
 import { client, chain } from '@/lib/thirdweb';
+import { polygonAmoy, sepolia } from 'thirdweb/chains';
 import GameContainer from '@/components/GameContainer';
 import GameHistory from '@/components/GameHistory';
 import NetworkCheck from '@/components/NetworkCheck';
-import { useForceChain } from '@/hooks/useForceChain';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,11 +15,17 @@ export default function Home() {
   const [contractAddress, setContractAddress] = useState('');
   const [refreshKey, setRefreshKey] = useState(0);
   const account = useActiveAccount();
-  const { isCorrectChain } = useForceChain();
+  const activeChain = useActiveWalletChain();
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (activeChain) {
+      setRefreshKey(prev => prev + 1);
+    }
+  }, [activeChain?.id]);
 
   const handleGameCreated = (newContractAddress: string) => {
     setContractAddress(newContractAddress);
@@ -56,28 +62,30 @@ export default function Home() {
               Rock Paper Scissors Lizard Spock
             </h1>
             <p className="text-lg text-gray-600 mb-6">
-              Play the ultimate version of Rock Paper Scissors on Polygon Amoy testnet
+              Play Rock Paper Scissors Lizard Spock on Polygon Amoy or Ethereum Sepolia testnet
             </p>
             <div className="flex justify-center mb-6">
               <ConnectButton 
                 client={client}
-                chain={chain}
+                chains={[polygonAmoy, sepolia]}
                 connectButton={{
                   label: "Connect Wallet",
                 }}
               />
             </div>
+            
+            {account && activeChain && (
+              <div className="text-center mb-4">
+                <div className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
+                  Connected to {activeChain.name} (Chain ID: {activeChain.id})
+                </div>
+              </div>
+            )}
           </div>
 
           <NetworkCheck />
           
-          {account && !isCorrectChain && (
-            <div className="bg-red-50 border border-red-200 p-4 rounded-lg mb-6">
-              <p className="text-red-800 text-center">
-                Please switch to Polygon Amoy testnet to continue
-              </p>
-            </div>
-          )}
           
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
             <div className="lg:col-span-3">

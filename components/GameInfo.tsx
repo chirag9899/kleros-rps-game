@@ -1,6 +1,6 @@
 'use client';
 
-import { useReadContract, useActiveAccount } from 'thirdweb/react';
+import { useReadContract, useActiveAccount, useActiveWalletChain } from 'thirdweb/react';
 import { getRPSContract } from '@/lib/thirdweb';
 import { MOVE_NAMES, formatEth, determineWinner } from '@/lib/contract';
 import { prepareContractCall, sendTransaction } from 'thirdweb';
@@ -13,7 +13,8 @@ interface GameInfoProps {
 
 export default function GameInfo({ contractAddress, onRefresh }: GameInfoProps) {
   const account = useActiveAccount();
-  const contract = getRPSContract(contractAddress);
+  const activeChain = useActiveWalletChain();
+  const contract = getRPSContract(contractAddress, activeChain?.id);
   const [timeoutAvailable, setTimeoutAvailable] = useState(false);
   const [timeoutCountdown, setTimeoutCountdown] = useState<number | null>(null);
   const [isClaiming, setIsClaiming] = useState(false);
@@ -174,6 +175,10 @@ export default function GameInfo({ contractAddress, onRefresh }: GameInfoProps) 
   const getGameState = () => {
     if (!player1 || player1 === '0x0000000000000000000000000000000000000000') {
       return { phase: 'no_game', message: 'No active game' };
+    }
+
+    if (stake && Number(stake) === 0) {
+      return { phase: 'completed', message: 'Game completed' };
     }
 
     const c2 = c2Move ? Number(c2Move) : 0;

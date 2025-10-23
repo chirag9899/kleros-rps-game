@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useReadContract } from 'thirdweb/react';
+import { useReadContract, useActiveWalletChain } from 'thirdweb/react';
 import { getRPSContract } from '@/lib/thirdweb';
 import CreateGame from './CreateGame';
 import JoinGame from './JoinGame';
@@ -24,8 +24,9 @@ export default function GamePlay({
   onRefresh,
 }: GamePlayProps) {
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const activeChain = useActiveWalletChain();
   
-  const contract = getRPSContract(contractAddress);
+  const contract = getRPSContract(contractAddress, activeChain?.id);
 
   const { data: player1, refetch: refetchPlayer1 } = useReadContract({
     contract,
@@ -86,7 +87,7 @@ export default function GamePlay({
 
     // game completed (stake is 0 after payout) - so checking this first!
     const stakeValue = stake ? BigInt(stake.toString()) : BigInt(0);
-    if (stakeValue === BigInt(0) && c2 > 0) {
+    if (stakeValue === BigInt(0)) {
       return 'completed';
     }
 

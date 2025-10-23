@@ -7,6 +7,7 @@ import CreateGame from './CreateGame';
 import JoinGame from './JoinGame';
 import RevealMove from './RevealMove';
 import GameCompleted from './GameCompleted';
+import GameInfo from './GameInfo';
 import { Icon } from '@/components/ui/icons';
 
 interface GamePlayProps {
@@ -159,31 +160,37 @@ export default function GamePlay({
         )}
 
         {phase === 'waiting_p2' && (
-          <div className="border rounded-lg p-6 bg-white">
-            <h2 className="text-xl font-bold mb-2 text-black">Waiting...</h2>
-            <p className="text-gray-600 mb-4">Waiting for Player 2 to join the game</p>
-            <div className="bg-blue-50 border border-blue-200 p-3 rounded text-sm">
-              <p className="text-blue-900">
-                <strong>Player 2 address:</strong> {player2 as string || 'Not set'}
-              </p>
-              <p className="text-blue-900">
-                <strong>Player 2 move (c2):</strong> {c2 === 0 ? 'Not played yet' : `Played (${c2})`}
-              </p>
+          <div className="space-y-4">
+            <div className="border rounded-lg p-6 bg-white">
+              <h2 className="text-xl font-bold mb-2 text-black">Waiting...</h2>
+              <p className="text-gray-600 mb-4">Waiting for Player 2 to join the game</p>
+              <div className="bg-blue-50 border border-blue-200 p-3 rounded text-sm">
+                <p className="text-blue-900">
+                  <strong>Player 2 address:</strong> {player2 as string || 'Not set'}
+                </p>
+                <p className="text-blue-900">
+                  <strong>Player 2 move (c2):</strong> {c2 === 0 ? 'Not played yet' : `Played (${c2})`}
+                </p>
+              </div>
+              <button
+                onClick={handleManualRefresh}
+                className="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded"
+              >
+                <Icon name="refresh" className="mr-1" />
+                Check if Player 2 Joined
+              </button>
             </div>
-            <button
-              onClick={handleManualRefresh}
-              className="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded"
-            >
-              <Icon name="refresh" className="mr-1" />
-              Check if Player 2 Joined
-            </button>
+            <GameInfo contractAddress={contractAddress} onRefresh={onRefresh} />
           </div>
         )}
 
         {phase === 'waiting_reveal' && (
-          <div className="border rounded-lg p-6 bg-white">
-            <h2 className="text-xl font-bold mb-2 text-black">Waiting...</h2>
-            <p className="text-gray-600">Waiting for Player 1 to reveal their move</p>
+          <div className="space-y-4">
+            <div className="border rounded-lg p-6 bg-white">
+              <h2 className="text-xl font-bold mb-2 text-black">Waiting...</h2>
+              <p className="text-gray-600">Waiting for Player 1 to reveal their move</p>
+            </div>
+            <GameInfo contractAddress={contractAddress} onRefresh={onRefresh} />
           </div>
         )}
 

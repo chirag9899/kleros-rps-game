@@ -74,38 +74,6 @@ export default function GameCompleted({ contractAddress, account, onStartNew }: 
         return;
       }
       
-      // Check for j1Timeout: Player 2 played but Player 1 never revealed
-      // This is detected by having p2Move > 0 but no stored Player 1 move
-      const p1Addr = (j1Address as string).toLowerCase();
-      const possibleKeys = [
-        `rps_move_${contractAddress}_${p1Addr}`,
-        `rps_move_${contractAddress.toLowerCase()}_${p1Addr}`,
-        `rps_last_game_move`,
-      ];
-      
-      let p1MoveStr: string | null = null;
-      for (const key of possibleKeys) {
-        p1MoveStr = localStorage.getItem(key);
-        if (p1MoveStr) break;
-      }
-      
-      if (!p1MoveStr && account?.address.toLowerCase() === p1Addr) {
-        for (const key of possibleKeys) {
-          const testKey = key.replace(p1Addr, account.address);
-          p1MoveStr = localStorage.getItem(testKey);
-          if (p1MoveStr) break;
-        }
-      }
-      
-      if (!p1MoveStr && p2Move > 0) {
-        // j1Timeout: Player 2 played but Player 1 never revealed
-        setPlayer1Move(null);
-        setPlayer2Move(p2Move);
-        setWinnerResult(2); // Player 2 wins by timeout
-        setDataSource('timeout');
-        setLoading(false);
-        return;
-      }
 
       const storedResult = getGameResult(contractAddress);
       if (storedResult) {
@@ -119,6 +87,17 @@ export default function GameCompleted({ contractAddress, account, onStartNew }: 
         return;
       }
       
+      // Timeout detection should only happen if we can't find any blockchain evidence
+      // of a normal game completion
+      
+      const p1Addr = (j1Address as string).toLowerCase();
+      const possibleKeys = [
+        `rps_move_${contractAddress}_${p1Addr}`,
+        `rps_move_${contractAddress.toLowerCase()}_${p1Addr}`,
+        `rps_last_game_move`,
+      ];
+      
+      let p1MoveStr: string | null = null;
       for (const key of possibleKeys) {
         p1MoveStr = localStorage.getItem(key);
         if (p1MoveStr) break;
@@ -241,6 +220,24 @@ export default function GameCompleted({ contractAddress, account, onStartNew }: 
         }
       }
       
+      // If we still don't have a result after blockchain analysis, check for timeout
+      if (winnerResult === null && player1Move === null) {
+        const p2Move = Number(c2MoveData);
+        if (p2Move === 0) {
+          // j2Timeout: Player 2 never played
+          setPlayer1Move(null);
+          setPlayer2Move(0);
+          setWinnerResult(1); // Player 1 wins by timeout
+          setDataSource('timeout');
+        } else if (p2Move > 0) {
+          // j1Timeout: Player 2 played but Player 1 never revealed
+          setPlayer1Move(null);
+          setPlayer2Move(p2Move);
+          setWinnerResult(2); // Player 2 wins by timeout
+          setDataSource('timeout');
+        }
+      }
+      
       setLoading(false);
     } catch (err) {
       console.error('Error fetching game data:', err);
@@ -273,7 +270,6 @@ export default function GameCompleted({ contractAddress, account, onStartNew }: 
     const isPlayer1 = account?.address.toLowerCase() === (j1Address as string)?.toLowerCase();
     const isPlayer2 = account?.address.toLowerCase() === (j2Address as string)?.toLowerCase();
     
-    // Check if this is a timeout scenario first
     if (dataSource === 'timeout') {
       let outcomeTitle = 'Game Completed';
       let outcomeColor = 'text-gray-800';
@@ -364,7 +360,7 @@ export default function GameCompleted({ contractAddress, account, onStartNew }: 
             <p className="text-gray-700">
               <strong>Contract:</strong>{' '}
               <a 
-                href={`https://amoy.polygonscan.com/address/${contractAddress}`}
+                href={`${activeChain?.id === 11155111 ? 'https://sepolia.etherscan.io' : 'https://amoy.polygonscan.com'}/address/${contractAddress}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-blue-600 hover:underline font-mono"
@@ -584,7 +580,7 @@ export default function GameCompleted({ contractAddress, account, onStartNew }: 
           <p className="text-gray-700">
             <strong>Contract:</strong>{' '}
             <a 
-              href={`https://amoy.polygonscan.com/address/${contractAddress}`}
+              href={`${activeChain?.id === 11155111 ? 'https://sepolia.etherscan.io' : 'https://amoy.polygonscan.com'}/address/${contractAddress}`}
               target="_blank"
               rel="noopener noreferrer"
               className="text-blue-600 hover:underline font-mono"
@@ -597,7 +593,7 @@ export default function GameCompleted({ contractAddress, account, onStartNew }: 
           </p>
           <p className="text-gray-700 mt-2">
             <a 
-              href={`https://amoy.polygonscan.com/address/${contractAddress}#internaltx`}
+              href={`${activeChain?.id === 11155111 ? 'https://sepolia.etherscan.io' : 'https://amoy.polygonscan.com'}/address/${contractAddress}#internaltx`}
               target="_blank"
               rel="noopener noreferrer"
               className="text-blue-600 hover:underline text-xs"
@@ -852,7 +848,7 @@ export default function GameCompleted({ contractAddress, account, onStartNew }: 
         <p className="text-gray-700">
           <strong>Contract:</strong>{' '}
           <a 
-            href={`https://amoy.polygonscan.com/address/${contractAddress}`}
+            href={`${activeChain?.id === 11155111 ? 'https://sepolia.etherscan.io' : 'https://amoy.polygonscan.com'}/address/${contractAddress}`}
             target="_blank"
             rel="noopener noreferrer"
             className="text-blue-600 hover:underline font-mono"

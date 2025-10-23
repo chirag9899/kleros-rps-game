@@ -16,7 +16,6 @@ export async function GET(request: NextRequest) {
     const apiKey = process.env.POLYGONSCAN_API_KEY || '';
     
     if (!apiKey) {
-      console.error('[Server] POLYGONSCAN_API_KEY not set in environment');
       return NextResponse.json(
         { error: 'API key not configured' },
         { status: 500 }
@@ -63,7 +62,6 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('[Server] Error fetching transactions:', error);
     return NextResponse.json(
       { error: error.message || 'Internal Server Error' },
       { status: 500 }

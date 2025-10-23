@@ -43,9 +43,9 @@ export default function TimeoutButtons({ contractAddress, onSuccess }: TimeoutBu
       alert('Timeout claimed! You have been refunded.');
       onSuccess();
     } catch (err: any) {
-      console.error('Error claiming timeout:', err);
+      console.error('error claiming timeout:', err);
       if (err.message?.includes('Timeout time has not passed')) {
-        setError('⏱ Timeout period (5 minutes) has not passed yet. Please wait.');
+        setError('Timeout period (5 minutes) has not passed yet. Please wait.');
       } else {
         setError(err.message || 'Failed to claim timeout');
       }

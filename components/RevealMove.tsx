@@ -6,6 +6,7 @@ import { prepareContractCall, sendTransaction } from 'thirdweb';
 import { getRPSContract } from '@/lib/thirdweb';
 import { updateGameStatus } from '@/lib/game-history';
 import { getSalt, clearSalt, MOVE_NAMES } from '@/lib/contract';
+import { storeGameResult } from '@/lib/game-result';
 import { Icon } from '@/components/ui/icons';
 
 interface RevealMoveProps {
@@ -50,7 +51,7 @@ export default function RevealMove({ contractAddress, onRevealed }: RevealMovePr
     if (moveStr) {
       setStoredMove(parseInt(moveStr));
     } else {
-      console.error('❌ No move found in localStorage!');
+      console.error('no move found in localStorage!');
     }
   }, [contractAddress, account]);
 
@@ -83,7 +84,6 @@ export default function RevealMove({ contractAddress, onRevealed }: RevealMovePr
     
     if (!salt) {
       setError('Salt not found! Did you clear browser data?');
-      console.error('❌ Salt not found. Checked keys:', `rps_salt_${contractAddress}_${account.address}`, `rps_salt_pending_${account.address}`, 'rps_last_game_salt');
       return;
     }
 
@@ -132,22 +132,23 @@ export default function RevealMove({ contractAddress, onRevealed }: RevealMovePr
         });
         stakeAmount = formatEth(stakeRaw.toString());
       } catch (readErr) {
-        console.error('⚠️ Could not read game data:', readErr);
+        console.error('could not read game data!', readErr);
       }
       
-      // get current gas price and increase for faster confirmation
       const { ethers } = await import('ethers');
       const provider = new ethers.providers.JsonRpcProvider(
-        'https://rpc-amoy.polygon.technology/'
+        activeChain?.id === 11155111 
+          ? 'https://ethereum-sepolia-rpc.publicnode.com' 
+          : 'https://rpc-amoy.polygon.technology/'
       );
       const gasPrice = await provider.getGasPrice();
-      const increasedGasPrice = gasPrice.mul(150).div(100); // 1.5x gas price
+      const increasedGasPrice = gasPrice.mul(150).div(100); 
       
       const transaction = prepareContractCall({
         contract,
         method: "function solve(uint8 _c1, uint256 _salt) external",
         params: [move, BigInt(salt)],
-        gas: BigInt(200000), // Sufficient gas for solve()
+        gas: BigInt(200000), 
         gasPrice: BigInt(increasedGasPrice.toString()),
       });
 
@@ -178,6 +179,8 @@ export default function RevealMove({ contractAddress, onRevealed }: RevealMovePr
       }
       
       if (player2Move !== null) {
+        // Store the game result after successful reveal
+        storeGameResult(contractAddress, move, player2Move);
       }
       
       clearSalt(contractAddress, account.address);
@@ -197,7 +200,7 @@ export default function RevealMove({ contractAddress, onRevealed }: RevealMovePr
       } else {
         setError(err.message || 'Failed to reveal');
       }
-      setIsRevealing(false); // Only clear on error
+      setIsRevealing(false);
     }
   };
 

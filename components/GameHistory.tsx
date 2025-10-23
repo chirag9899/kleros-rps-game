@@ -39,15 +39,15 @@ export default function GameHistory({ onLoadGame, currentAddress }: GameHistoryP
   const getStatusColor = (status?: string) => {
     switch (status) {
       case 'completed':
-        return 'text-green-400';
+        return 'text-green-600';
       case 'timeout':
-        return 'text-orange-400';
+        return 'text-orange-500';
       case 'revealed':
-        return 'text-blue-400';
+        return 'text-blue-500';
       case 'joined':
-        return 'text-yellow-400';
+        return 'text-yellow-500';
       case 'created':
-        return 'text-gray-400';
+        return 'text-gray-500';
       default:
         return 'text-gray-500';
     }
@@ -76,17 +76,17 @@ export default function GameHistory({ onLoadGame, currentAddress }: GameHistoryP
 
   return (
     <div className="w-full max-w-4xl mx-auto mt-6">
-      <div className="bg-gray-800 rounded-lg shadow-lg border border-gray-700">
+      <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-lg border border-blue-200/50">
         <div 
-          className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-750"
+          className="flex items-center justify-between p-4 cursor-pointer hover:bg-pink-50/50"
           onClick={() => setIsExpanded(!isExpanded)}
         >
           <div className="flex items-center gap-3">
-            <Icon name="copy" className="text-xl" />
-            <h2 className="text-lg font-bold text-white">
+            <Icon name="copy" className="text-xl text-pink-600" />
+            <h2 className="text-lg font-bold text-gray-800">
               Game History
             </h2>
-            <span className="text-sm text-gray-400">
+            <span className="text-sm text-gray-600">
               ({history.length} game{history.length !== 1 ? 's' : ''})
             </span>
           </div>
@@ -98,41 +98,41 @@ export default function GameHistory({ onLoadGame, currentAddress }: GameHistoryP
                   e.stopPropagation();
                   handleClear();
                 }}
-                className="px-3 py-1 text-sm bg-red-600 hover:bg-red-700 text-white rounded transition-colors"
+                className="px-3 py-1 text-sm bg-pink-500 hover:bg-pink-600 text-white rounded transition-colors"
               >
                 Clear
               </button>
             )}
-            <button className="text-gray-400 hover:text-white transition-colors">
+            <button className="text-gray-600 hover:text-gray-800 transition-colors">
               {isExpanded ? '▼' : '▶'}
             </button>
           </div>
         </div>
 
         {isExpanded && (
-          <div className="border-t border-gray-700">
+          <div className="border-t border-blue-200/50">
             <div className="max-h-96 overflow-y-auto">
               {history.map((game, index) => (
                 <div
                   key={game.contractAddress}
-                  className={`p-4 border-b border-gray-700 last:border-b-0 hover:bg-gray-750 transition-colors ${
+                  className={`p-4 border-b border-blue-200/30 last:border-b-0 hover:bg-blue-50/50 transition-colors ${
                     currentAddress?.toLowerCase() === game.contractAddress.toLowerCase()
-                      ? 'bg-blue-900/20 border-l-4 border-l-blue-500'
+                      ? 'bg-blue-100/50 border-l-4 border-l-blue-400'
                       : ''
                   }`}
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-2">
-                        <span className="text-sm font-medium text-white">
+                        <span className="text-sm font-medium text-gray-800">
                           {game.role === 'player1' ? (
                             <>
-                              <Icon name="game" className="mr-1" />
+                              <Icon name="game" className="mr-1 text-pink-600" />
                               Creator
                             </>
                           ) : (
                             <>
-                              <Icon name="game" className="mr-1" />
+                              <Icon name="game" className="mr-1 text-blue-600" />
                               Challenger
                             </>
                           )}
@@ -142,17 +142,17 @@ export default function GameHistory({ onLoadGame, currentAddress }: GameHistoryP
                         </span>
                       </div>
                       
-                      <div className="space-y-1 text-sm text-gray-400">
+                      <div className="space-y-1 text-sm text-gray-600">
                         <div className="flex items-center gap-2">
                           <span className="text-gray-500">Contract:</span>
-                          <code className="text-blue-400 font-mono text-xs">
+                          <code className="text-blue-600 font-mono text-xs">
                             {formatAddress(game.contractAddress)}
                           </code>
                         </div>
                         
                         <div className="flex items-center gap-2">
                           <span className="text-gray-500">Opponent:</span>
-                          <code className="text-purple-400 font-mono text-xs">
+                          <code className="text-pink-600 font-mono text-xs">
                             {formatAddress(game.opponent)}
                           </code>
                         </div>
@@ -160,11 +160,11 @@ export default function GameHistory({ onLoadGame, currentAddress }: GameHistoryP
                         <div className="flex items-center gap-4">
                           <div className="flex items-center gap-2">
                             <span className="text-gray-500">Stake:</span>
-                            <span className="text-green-400 font-semibold">
+                            <span className="text-green-600 font-semibold">
                               {formatEth(game.stake)} MATIC
                             </span>
                           </div>
-                          <span className="text-gray-600">•</span>
+                          <span className="text-gray-400">•</span>
                           <span className="text-gray-500">
                             {formatTimestamp(game.timestamp)}
                           </span>
@@ -174,7 +174,7 @@ export default function GameHistory({ onLoadGame, currentAddress }: GameHistoryP
 
                     <button
                       onClick={() => onLoadGame(game.contractAddress)}
-                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition-colors flex-shrink-0"
+                      className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded transition-colors flex-shrink-0"
                     >
                       Load Game
                     </button>

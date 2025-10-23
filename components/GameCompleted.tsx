@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useReadContract } from 'thirdweb/react';
+import { useReadContract, useActiveWalletChain } from 'thirdweb/react';
 import { getRPSContract } from '@/lib/thirdweb';
 import { MOVES, MOVE_NAMES, determineWinner } from '@/lib/contract';
 import { getGameResult } from '@/lib/game-result';
@@ -19,15 +19,16 @@ export default function GameCompleted({ contractAddress, account, onStartNew }: 
   const [winnerResult, setWinnerResult] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [winnerAddress, setWinnerAddress] = useState<string | null>(null);
-  const [dataSource, setDataSource] = useState<'localStorage' | 'blockchain' | null>(null);
+  const [dataSource, setDataSource] = useState<'localStorage' | 'blockchain' | 'timeout' | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const [isRetrying, setIsRetrying] = useState(false);
+  const activeChain = useActiveWalletChain();
 
   const formatAddress = (addr: string) => {
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
   };
 
-  const contract = getRPSContract(contractAddress);
+  const contract = getRPSContract(contractAddress, activeChain?.id);
 
   const { data: j1Address } = useReadContract({
     contract,
@@ -60,6 +61,20 @@ export default function GameCompleted({ contractAddress, account, onStartNew }: 
         return;
       }
 
+      const p2Move = Number(c2MoveData);
+      
+      // Check if this is a timeout scenario FIRST
+      if (p2Move === 0) {
+        // j2Timeout: Player 2 never played
+        setPlayer1Move(null);
+        setPlayer2Move(0);
+        setWinnerResult(1); // Player 1 wins by timeout
+        setDataSource('timeout');
+        setLoading(false);
+        return;
+      }
+      
+
       const storedResult = getGameResult(contractAddress);
       if (storedResult) {
         setPlayer1Move(storedResult.player1Move);
@@ -72,7 +87,9 @@ export default function GameCompleted({ contractAddress, account, onStartNew }: 
         return;
       }
       
-      const p2Move = Number(c2MoveData);
+      // Timeout detection should only happen if we can't find any blockchain evidence
+      // of a normal game completion
+      
       const p1Addr = (j1Address as string).toLowerCase();
       const possibleKeys = [
         `rps_move_${contractAddress}_${p1Addr}`,
@@ -128,7 +145,7 @@ export default function GameCompleted({ contractAddress, account, onStartNew }: 
 
   const fetchWinnerFromChain = async (contract: string, p1: string, p2: string) => {
     try {
-      const response = await fetch(`/api/get-internal-transactions?contractAddress=${contract}`);
+      const response = await fetch(`/api/get-internal-transactions?contractAddress=${contract}&chainId=${activeChain?.id}`);
       if (!response.ok) {
         setLoading(false);
         return;
@@ -203,6 +220,24 @@ export default function GameCompleted({ contractAddress, account, onStartNew }: 
         }
       }
       
+      // If we still don't have a result after blockchain analysis, check for timeout
+      if (winnerResult === null && player1Move === null) {
+        const p2Move = Number(c2MoveData);
+        if (p2Move === 0) {
+          // j2Timeout: Player 2 never played
+          setPlayer1Move(null);
+          setPlayer2Move(0);
+          setWinnerResult(1); // Player 1 wins by timeout
+          setDataSource('timeout');
+        } else if (p2Move > 0) {
+          // j1Timeout: Player 2 played but Player 1 never revealed
+          setPlayer1Move(null);
+          setPlayer2Move(p2Move);
+          setWinnerResult(2); // Player 2 wins by timeout
+          setDataSource('timeout');
+        }
+      }
+      
       setLoading(false);
     } catch (err) {
       console.error('Error fetching game data:', err);
@@ -234,6 +269,119 @@ export default function GameCompleted({ contractAddress, account, onStartNew }: 
   if (player1Move === null && player2Move !== null) {
     const isPlayer1 = account?.address.toLowerCase() === (j1Address as string)?.toLowerCase();
     const isPlayer2 = account?.address.toLowerCase() === (j2Address as string)?.toLowerCase();
+    
+    if (dataSource === 'timeout') {
+      let outcomeTitle = 'Game Completed';
+      let outcomeColor = 'text-gray-800';
+      let outcomeSubtitle = '';
+      
+      if (winnerResult === 1) {
+        // j2Timeout: Player 2 never played
+        outcomeSubtitle = 'Opponent did not join within the timeout period. Your stake has been returned.';
+      } else if (winnerResult === 2) {
+        // j1Timeout: Player 1 never revealed
+        outcomeSubtitle = 'Opponent did not reveal their move within the timeout period. You received the full pot.';
+      }
+      
+      return (
+        <div className="border rounded-lg p-6 bg-white shadow-lg">
+          <h2 className={`text-3xl font-bold mb-2 text-center ${outcomeColor}`}>
+            {outcomeTitle}
+          </h2>
+          <p className="text-center text-gray-600 mb-4 text-lg">{outcomeSubtitle}</p>
+          
+          <div className="text-center mb-4">
+            <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">
+              Timeout Resolution
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 mb-6">
+            {winnerResult === 1 ? (
+              // j2Timeout: Player 2 never played
+              <>
+                <div className="border p-4 rounded-lg text-center bg-blue-50 border-blue-200">
+                  <p className="text-xs text-gray-600 font-semibold mb-1">
+                    You (Player 1)
+                  </p>
+                  <p className="text-sm text-gray-700 mb-2 font-mono">
+                    {formatAddress(j1Address as string)}
+                  </p>
+                  <div className="text-3xl mb-2 text-gray-400">—</div>
+                  <p className="text-lg font-medium text-gray-600">Not Revealed</p>
+                </div>
+
+                <div className="border p-4 rounded-lg text-center bg-gray-50 border-gray-200">
+                  <p className="text-xs text-gray-600 font-semibold mb-1">
+                    Opponent (Player 2)
+                  </p>
+                  <p className="text-sm text-gray-700 mb-2 font-mono">
+                    {formatAddress(j2Address as string)}
+                  </p>
+                  <div className="text-3xl mb-2 text-gray-400">—</div>
+                  <p className="text-lg font-medium text-gray-600">Did Not Join</p>
+                </div>
+              </>
+            ) : (
+              // j1Timeout: Player 1 never revealed
+              <>
+                <div className="border p-4 rounded-lg text-center bg-gray-50 border-gray-200">
+                  <p className="text-xs text-gray-600 font-semibold mb-1">
+                    Opponent (Player 1)
+                  </p>
+                  <p className="text-sm text-gray-700 mb-2 font-mono">
+                    {formatAddress(j1Address as string)}
+                  </p>
+                  <div className="text-3xl mb-2 text-gray-400">—</div>
+                  <p className="text-lg font-medium text-gray-600">Not Revealed</p>
+                </div>
+
+                <div className="border p-4 rounded-lg text-center bg-blue-50 border-blue-200">
+                  <p className="text-xs text-gray-600 font-semibold mb-1">
+                    You (Player 2)
+                  </p>
+                  <p className="text-sm text-gray-700 mb-2 font-mono">
+                    {formatAddress(j2Address as string)}
+                  </p>
+                  <div className="text-3xl mb-2">
+                    {player2Move === MOVES.ROCK && <Icon name="rock" className="text-gray-600" />}
+                    {player2Move === MOVES.PAPER && <Icon name="paper" className="text-gray-600" />}
+                    {player2Move === MOVES.SCISSORS && <Icon name="scissors" className="text-gray-600" />}
+                    {player2Move === MOVES.SPOCK && <Icon name="spock" className="text-gray-600" />}
+                    {player2Move === MOVES.LIZARD && <Icon name="lizard" className="text-gray-600" />}
+                  </div>
+                  <p className="text-lg font-medium text-gray-900">{MOVE_NAMES[player2Move]}</p>
+                </div>
+              </>
+            )}
+          </div>
+
+          <div className="bg-gray-50 border border-gray-200 p-3 rounded mb-4 text-sm">
+            <p className="text-gray-700">
+              <strong>Contract:</strong>{' '}
+              <a 
+                href={`${activeChain?.id === 11155111 ? 'https://sepolia.etherscan.io' : 'https://amoy.polygonscan.com'}/address/${contractAddress}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:underline font-mono"
+              >
+                {contractAddress}
+              </a>
+            </p>
+            <p className="text-gray-700 mt-1">
+              <strong>Status:</strong> Funds distributed
+            </p>
+          </div>
+
+          <button
+            onClick={onStartNew}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-colors"
+          >
+            Start New Game
+          </button>
+        </div>
+      );
+    }
     
     let outcomeTitle = 'Game Completed';
     let outcomeColor = 'text-yellow-600';
@@ -411,7 +559,7 @@ export default function GameCompleted({ contractAddress, account, onStartNew }: 
                 </li>
               </ul>
               <p className="mt-3 text-xs text-blue-700">
-                💡 <strong>Tip:</strong> Check the contract transaction history on PolygonScan to see the exact payout.
+                Check the contract transaction history on PolygonScan to see the exact payout.
               </p>
               </div>
             </div>
@@ -432,7 +580,7 @@ export default function GameCompleted({ contractAddress, account, onStartNew }: 
           <p className="text-gray-700">
             <strong>Contract:</strong>{' '}
             <a 
-              href={`https://amoy.polygonscan.com/address/${contractAddress}`}
+              href={`${activeChain?.id === 11155111 ? 'https://sepolia.etherscan.io' : 'https://amoy.polygonscan.com'}/address/${contractAddress}`}
               target="_blank"
               rel="noopener noreferrer"
               className="text-blue-600 hover:underline font-mono"
@@ -445,7 +593,7 @@ export default function GameCompleted({ contractAddress, account, onStartNew }: 
           </p>
           <p className="text-gray-700 mt-2">
             <a 
-              href={`https://amoy.polygonscan.com/address/${contractAddress}#internaltx`}
+              href={`${activeChain?.id === 11155111 ? 'https://sepolia.etherscan.io' : 'https://amoy.polygonscan.com'}/address/${contractAddress}#internaltx`}
               target="_blank"
               rel="noopener noreferrer"
               className="text-blue-600 hover:underline text-xs"
@@ -488,7 +636,21 @@ export default function GameCompleted({ contractAddress, account, onStartNew }: 
   let outcomeColor = 'text-gray-800';
   let outcomeEmoji = '🎮';
 
-  if (winnerResult === 0) {
+  if (dataSource === 'timeout') {
+    if (winnerResult === 1) {
+      // j2Timeout: Player 2 never played
+      outcomeMessage = 'Timeout Victory!';
+      winnerMessage = 'Player 2 never joined the game. You received your stake back.';
+      outcomeColor = 'text-orange-600';
+      outcomeEmoji = '⏰';
+    } else if (winnerResult === 2) {
+      // j1Timeout: Player 1 never revealed
+      outcomeMessage = 'Timeout Victory!';
+      winnerMessage = 'Player 1 never revealed their move. You received the full pot!';
+      outcomeColor = 'text-orange-600';
+      outcomeEmoji = '⏰';
+    }
+  } else if (winnerResult === 0) {
     outcomeMessage = 'It\'s a Tie!';
     winnerMessage = `Both players chose ${MOVE_NAMES[player1Move]}. The stake has been split.`;
     outcomeColor = 'text-yellow-600';
@@ -519,16 +681,79 @@ export default function GameCompleted({ contractAddress, account, onStartNew }: 
       {dataSource && (
         <div className="text-center mb-4">
           <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
-            dataSource === 'localStorage' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'
+            dataSource === 'localStorage' ? 'bg-blue-100 text-blue-800' : 
+            dataSource === 'blockchain' ? 'bg-purple-100 text-purple-800' :
+            'bg-orange-100 text-orange-800'
           }`}>
             {dataSource === 'localStorage' && '💾 Loaded from Your Browser'}
             {dataSource === 'blockchain' && '⛓️ Calculated from Blockchain'}
+            {dataSource === 'timeout' && '⏰ Timeout Victory'}
           </span>
         </div>
       )}
 
       <div className="grid grid-cols-2 gap-4 mb-6">
-        {isPlayer1 ? (
+        {dataSource === 'timeout' ? (
+          <>
+            {winnerResult === 1 ? (
+              // j2Timeout: Player 2 never played
+              <>
+                <div className="border-2 p-4 rounded-lg text-center bg-orange-50 border-orange-300">
+                  <p className="text-xs text-gray-600 font-semibold mb-1">
+                    You (Player 1)
+                  </p>
+                  <p className="text-sm text-gray-700 mb-2 font-mono">
+                    {formatAddress(j1Address as string)}
+                  </p>
+                  <div className="text-4xl mb-2">❓</div>
+                  <p className="text-xl font-bold text-gray-500">Unknown</p>
+                </div>
+
+                <div className="border-2 p-4 rounded-lg text-center bg-gray-100 border-gray-300">
+                  <p className="text-xs text-gray-600 font-semibold mb-1">
+                    Opponent (Player 2)
+                  </p>
+                  <p className="text-sm text-gray-700 mb-2 font-mono">
+                    {formatAddress(j2Address as string)}
+                  </p>
+                  <div className="text-4xl mb-2">❌</div>
+                  <p className="text-xl font-bold text-gray-500">Never Played</p>
+                </div>
+              </>
+            ) : (
+              // j1Timeout: Player 1 never revealed
+              <>
+                <div className="border-2 p-4 rounded-lg text-center bg-gray-100 border-gray-300">
+                  <p className="text-xs text-gray-600 font-semibold mb-1">
+                    Opponent (Player 1)
+                  </p>
+                  <p className="text-sm text-gray-700 mb-2 font-mono">
+                    {formatAddress(j1Address as string)}
+                  </p>
+                  <div className="text-4xl mb-2">❓</div>
+                  <p className="text-xl font-bold text-gray-500">Never Revealed</p>
+                </div>
+
+                <div className="border-2 p-4 rounded-lg text-center bg-orange-50 border-orange-300">
+                  <p className="text-xs text-gray-600 font-semibold mb-1">
+                    You (Player 2)
+                  </p>
+                  <p className="text-sm text-gray-700 mb-2 font-mono">
+                    {formatAddress(j2Address as string)}
+                  </p>
+                  <div className="text-4xl mb-2">
+                    {player2Move === MOVES.ROCK && <Icon name="rock" className="text-gray-600" />}
+                    {player2Move === MOVES.PAPER && <Icon name="paper" className="text-gray-600" />}
+                    {player2Move === MOVES.SCISSORS && <Icon name="scissors" className="text-gray-600" />}
+                    {player2Move === MOVES.SPOCK && <Icon name="spock" className="text-gray-600" />}
+                    {player2Move === MOVES.LIZARD && <Icon name="lizard" className="text-gray-600" />}
+                  </div>
+                  <p className="text-xl font-bold text-gray-900">{MOVE_NAMES[player2Move]}</p>
+                </div>
+              </>
+            )}
+          </>
+        ) : isPlayer1 ? (
           <>
             <div className={`border-2 p-4 rounded-lg text-center ${
               winnerResult === 1 ? 'bg-green-50 border-green-500' : 
@@ -623,7 +848,7 @@ export default function GameCompleted({ contractAddress, account, onStartNew }: 
         <p className="text-gray-700">
           <strong>Contract:</strong>{' '}
           <a 
-            href={`https://amoy.polygonscan.com/address/${contractAddress}`}
+            href={`${activeChain?.id === 11155111 ? 'https://sepolia.etherscan.io' : 'https://amoy.polygonscan.com'}/address/${contractAddress}`}
             target="_blank"
             rel="noopener noreferrer"
             className="text-blue-600 hover:underline font-mono"

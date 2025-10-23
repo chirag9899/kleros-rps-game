@@ -4,6 +4,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const contractAddress = searchParams.get('contractAddress');
+    const chainId = searchParams.get('chainId');
 
     if (!contractAddress) {
       return NextResponse.json(
@@ -22,8 +23,10 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const internalTxUrl = `https://api.etherscan.io/v2/api?chainid=80002&module=account&action=txlistinternal&address=${contractAddress}&startblock=0&endblock=99999999&sort=desc${apiKey ? `&apikey=${apiKey}` : ''}`;
-    const regularTxUrl = `https://api.etherscan.io/v2/api?chainid=80002&module=account&action=txlist&address=${contractAddress}&startblock=0&endblock=99999999&sort=desc${apiKey ? `&apikey=${apiKey}` : ''}`;
+    const baseUrl = 'https://api.etherscan.io/v2/api';
+    
+    const internalTxUrl = `${baseUrl}?chainid=${chainId}&module=account&action=txlistinternal&address=${contractAddress}&startblock=0&endblock=99999999&sort=desc${apiKey ? `&apikey=${apiKey}` : ''}`;
+    const regularTxUrl = `${baseUrl}?chainid=${chainId}&module=account&action=txlist&address=${contractAddress}&startblock=0&endblock=99999999&sort=desc${apiKey ? `&apikey=${apiKey}` : ''}`;
 
     let internalResponse = await fetch(internalTxUrl);
     let internalData: any = null;

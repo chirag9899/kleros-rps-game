@@ -1,6 +1,7 @@
 export async function verifyContract(
   contractAddress: string,
-  constructorArgs: string
+  constructorArgs: string,
+  chainId?: number
 ): Promise<{
   message: any; guid: string | null; status: string 
 }> {
@@ -13,6 +14,7 @@ export async function verifyContract(
       body: JSON.stringify({
         contractAddress,
         constructorArgs,
+        chainId,
       }),
     });
 

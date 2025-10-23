@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useActiveAccount } from 'thirdweb/react';
+import { useActiveAccount, useActiveWalletChain } from 'thirdweb/react';
 import { sendTransaction, prepareTransaction } from 'thirdweb';
 import { client, chain } from '@/lib/thirdweb';
 import { RPS_ABI } from '@/lib/contract';
@@ -25,6 +25,7 @@ interface CreateGameProps {
 
 export default function CreateGame({ onGameCreated }: CreateGameProps) {
   const account = useActiveAccount();
+  const activeChain = useActiveWalletChain();
   const [opponent, setOpponent] = useState('');
   const [stakeAmount, setStakeAmount] = useState('0.001');
   const [selectedMove, setSelectedMove] = useState(MOVES.ROCK);
@@ -76,7 +77,9 @@ export default function CreateGame({ onGameCreated }: CreateGameProps) {
       const deploymentData = RPS_BYTECODE + constructorParams.slice(2);
       
       const provider = new ethers.providers.JsonRpcProvider(
-        'https://rpc-amoy.polygon.technology/'
+        activeChain?.id === 11155111 
+          ? 'https://ethereum-sepolia-rpc.publicnode.com' 
+          : 'https://rpc-amoy.polygon.technology/'
       );
       const gasPrice = await provider.getGasPrice();
       const increasedGasPrice = gasPrice.mul(150).div(100);
@@ -96,7 +99,7 @@ export default function CreateGame({ onGameCreated }: CreateGameProps) {
         to: null as any,
         data: deploymentData as `0x${string}`,
         value: BigInt(stake.toString()),
-        chain,
+        chain: activeChain || chain,
         client,
         gas: BigInt(5000000),
         gasPrice: BigInt(increasedGasPrice.toString()),
@@ -106,7 +109,7 @@ export default function CreateGame({ onGameCreated }: CreateGameProps) {
         transaction: deployTx,
         account,
       });
-      
+
       let receipt = null;
       let attempts = 0;
       const maxAttempts = 90;
@@ -179,7 +182,7 @@ export default function CreateGame({ onGameCreated }: CreateGameProps) {
         try {
           setVerificationStatus(`Background verification attempt ${attempt}/3...`);
           
-          const result = await verifyContract(contractAddress, constructorArgs);
+          const result = await verifyContract(contractAddress, constructorArgs, activeChain?.id);
           
           if (result.status === 'success' || result.status === 'Pending') {
             setVerificationStatus('Verification submitted successfully!');
@@ -216,8 +219,8 @@ export default function CreateGame({ onGameCreated }: CreateGameProps) {
       <div className="space-y-4">
         <div className="bg-blue-50 border border-blue-200 p-3 rounded text-sm">
           <p className="text-blue-800">
-            <strong>Creating a game will deploy a new contract on Amoy testnet.</strong><br/>
-            Make sure you have enough MATIC for gas + stake.
+            <strong>Creating a game will deploy a new contract on {activeChain?.name || 'testnet'}.</strong><br/>
+            Make sure you have enough {activeChain?.id === 11155111 ? 'ETH' : 'MATIC'} for gas + stake.
           </p>
         </div>
 
@@ -236,7 +239,7 @@ export default function CreateGame({ onGameCreated }: CreateGameProps) {
 
         <div>
           <label className="block text-sm font-medium mb-1 text-black">
-            Stake Amount (ETH)
+            Stake Amount ({activeChain?.id === 11155111 ? 'ETH' : 'MATIC'})
           </label>
           <input
             type="number"

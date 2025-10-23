@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useActiveAccount } from 'thirdweb/react';
+import { useActiveAccount, useActiveWalletChain } from 'thirdweb/react';
 import { prepareContractCall, sendTransaction } from 'thirdweb';
 import { getRPSContract } from '@/lib/thirdweb';
 import { updateGameStatus } from '@/lib/game-history';
@@ -15,6 +15,7 @@ interface RevealMoveProps {
 
 export default function RevealMove({ contractAddress, onRevealed }: RevealMoveProps) {
   const account = useActiveAccount();
+  const activeChain = useActiveWalletChain();
   const [isRevealing, setIsRevealing] = useState(false);
   const [error, setError] = useState('');
   const [storedMove, setStoredMove] = useState<number | null>(null);
@@ -92,7 +93,7 @@ export default function RevealMove({ contractAddress, onRevealed }: RevealMovePr
     setIsRevealing(true);
 
     try {
-      const contract = getRPSContract(contractAddress);
+      const contract = getRPSContract(contractAddress, activeChain?.id);
       
       const { readContract } = await import('thirdweb');
       const { formatEth } = await import('@/lib/contract');
@@ -289,7 +290,7 @@ export default function RevealMove({ contractAddress, onRevealed }: RevealMovePr
         {storedMove === null && (
           <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded">
             <p className="text-sm text-blue-900 font-semibold mb-2">
-              💡 Alternative: Claim Timeout
+              Alternative: Claim Timeout
             </p>
             <p className="text-xs text-blue-800 mb-3">
               If you can't reveal your move, wait 5 minutes from when Player 2 joined, then you can claim a timeout refund using j2Timeout function.

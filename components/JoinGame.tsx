@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useActiveAccount, useReadContract } from 'thirdweb/react';
+import { useActiveAccount, useReadContract, useActiveWalletChain } from 'thirdweb/react';
 import { prepareContractCall, sendTransaction } from 'thirdweb';
 import { getRPSContract } from '@/lib/thirdweb';
 import { addGameToHistory, updateGameStatus } from '@/lib/game-history';
@@ -16,11 +16,12 @@ interface JoinGameProps {
 
 export default function JoinGame({ contractAddress, onGameJoined }: JoinGameProps) {
   const account = useActiveAccount();
+  const activeChain = useActiveWalletChain();
   const [selectedMove, setSelectedMove] = useState(MOVES.ROCK);
   const [isJoining, setIsJoining] = useState(false);
   const [error, setError] = useState('');
   
-  const contract = getRPSContract(contractAddress);
+  const contract = getRPSContract(contractAddress, activeChain?.id);
   
   const { data: player1 } = useReadContract({
     contract,

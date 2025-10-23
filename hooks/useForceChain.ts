@@ -2,24 +2,21 @@
 
 import { useEffect } from 'react';
 import { useActiveAccount, useActiveWalletChain, useSwitchActiveWalletChain } from 'thirdweb/react';
-import { polygonAmoy } from 'thirdweb/chains';
+import { polygonAmoy, sepolia } from 'thirdweb/chains';
 
 export function useForceChain() {
   const account = useActiveAccount();
   const activeChain = useActiveWalletChain();
   const switchActiveWalletChain = useSwitchActiveWalletChain();
 
-  useEffect(() => {
-    if (account && activeChain && activeChain.id !== polygonAmoy.id) {
-      switchActiveWalletChain(polygonAmoy).catch((error) => {
-        console.log('User rejected chain switch or error occurred:', error);
-      });
-    }
-  }, [account, activeChain, switchActiveWalletChain]);
+  const supportedChains = [polygonAmoy.id, sepolia.id];
+  const isCorrectChain = activeChain?.id && supportedChains.includes(activeChain.id);
+
 
   return {
-    isCorrectChain: activeChain?.id === polygonAmoy.id,
+    isCorrectChain,
     activeChain,
-    switchToAmoy: () => switchActiveWalletChain(polygonAmoy)
+    switchToAmoy: () => switchActiveWalletChain(polygonAmoy),
+    switchToSepolia: () => switchActiveWalletChain(sepolia)
   };
 }
